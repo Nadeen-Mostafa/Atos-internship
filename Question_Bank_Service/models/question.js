@@ -6,14 +6,13 @@ const questionSchema = new Schema({
     subCategory: { type: String, required: true },
     mark: { type: Number, required: true },
     expextedTime: { type: Number, required: true },
-    correctAnswers: [{ type: Number, required: true }],  //array of ids
-    createdBy: { type: mongoose.Types.ObjectId, required: true ,ref:"User" },
+    correctAnswers: { type: String, required: true },  //array of ids
+    createdBy: { type: String, required: true },
     createdAt: { type: Date, required: true },
-    answers: [{
+    answers:
+        { type: Object, required: true }
 
-        name: { type: String, required: true },
-        description: { type: String, required: true }
-    }],
+    ,
 })
 
 module.exports = mongoose.model("question", questionSchema)

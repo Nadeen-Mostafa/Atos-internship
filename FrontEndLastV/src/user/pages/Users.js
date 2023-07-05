@@ -1,19 +1,47 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 
 import UsersList from '../components/UsersList';
+import axios from 'axios';
+import ErrorModel from '../../Model/ErorrModel';
 
 const Users = () => {
-  const USERS = [
-    {
-      id: 'u1',
-      name: 'Max Schwarz',
-      password:"test",
-      usertype:"student",
-      questions: 3
-    }
-  ];
+  const [loadedUsers, setLoadedUsers] = useState();
+  const [error, setError] = useState();
+  const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    const sendReq = async () => {
+      setIsLoading(true);
+      try {
+        const res =await axios.get("http://localhost:4000/api/users");
+        
+        const resData = await res.data;
+        
+        if (res.status !== 200) {
+          throw new Error(resData.message);
+        }
+        setLoadedUsers(resData.users);
+        
+        
+        // console.log(res);
+      }
+      catch (err) {
+       
+        setError(err.message);
+      }
+      setIsLoading(false);
+    };
+    sendReq();
+  }, []);
 
-  return <UsersList items={USERS} />;
+  const errorHandler = () => {
+    setError(null);
+  }
+  return (
+    <React.Fragment>
+      <ErrorModel error={error} onClear={errorHandler} />
+      {!isLoading && loadedUsers && <UsersList items={loadedUsers} />}
+    </React.Fragment>
+  );
 };
 
 export default Users;

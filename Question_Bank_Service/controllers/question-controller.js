@@ -3,50 +3,12 @@ const { validationResult } = require('express-validator');
 const uuid = require('uuid').v4;
 const bodyParser = require("body-parser");
 const Question = require("../models/question");
-const User = require("../../Backend/models/user");
+const User = require("../../User_Service/models/user");
 const { default: mongoose } = require('mongoose');
-let DUMMY_QUESTIONS = [
-    {
-        id: 'q1',
-        name: 'this is name for first question',
-        category: 'this is category',
-        subCategory: 'this is subcaegory',
-        mark: 'this is the mark',
-        expextedTime: "",
-        correctAnswers: [1, 2, 3, 4],  //array of ids
-        createdBy: "u1",
-        createdAt: "",
-        answers: [{
-            id: 1,
-            name: "name of answer",
-            description: "this is desc"
-        }, {
-            id: 2,
-            name: "name of answer2",
-            description: "this is desc2"
-        }],
-    }, {
-        id: 'q2',
-        name: 'this is name for second question',
-        category: 'this is category second',
-        subCategory: 'this is subcaegory',
-        mark: 'this is the mark',
-        expextedTime: "",
-        correctAnswers: [1, 2, 3, 4],  //array of ids
-        createdBy: "u2",
-        createdAt: "",
-        answers: [{
-            id: 1,
-            name: "name of answer",
-            description: "this is desc"
-        }, {
-            id: 2,
-            name: "name of answer2",
-            description: "this is desc2"
-        }],
-    }]
+const question = require('../models/question');
+const {ObjectId} = require("mongodb")
 
-  
+
 const getQuestionsById = async (req, res, next) => {
     const questionId = req.params.qid; // { pid: 'p1' }
     let question;
@@ -66,36 +28,87 @@ const getQuestionsById = async (req, res, next) => {
     res.json({ question: question.toObject({ getters: true }) }); // => { place } => { place: place }
 };
 
-const getQuestionsByUserId = async (req, res, next) => {
-    const userId = req.params.uid;
-    let questions;
+const getQuestions = async (req, res, next) => {
+    // const questionId = req.params.qid; // { pid: 'p1' }
+    let question;
     try {
-        questions = await Question.find({ createdBy: userId })
+        question = await Question.find();
     }
     catch (err) {
-        const error = new HttpError('Fetching Failed, please try again later.', 500);
+        const error = new HttpError('Could not find a question.', 404);
+        return next(error);
+    }
+
+    if (!question) {
+        const error = new HttpError('Could not find a question for the provided id.', 404);
+        return next(error);
+    }
+
+    res.json({ questions: question.map(question => question.toObject({ getters: true })) });
+
+
+    // res.json({ question: question.toObject({ getters: true }) }); // => { place } => { place: place }
+};
+
+const getQuestionsByUserId = async (req, res, next) => {
+  
+    const userId = req.params.uid;
+ 
+    // let questions;
+    let userWithQuestions;
+    try {
+        userWithQuestions = await Question.find({createdBy:userId});
+        
+    } catch (err) {
+        console.log("error in catch in back");
+        const error = new HttpError(
+
+            'Fetching questions failed, please try again later.',
+            500
+        );
         return next(error);
     }
 
 
-
-    if (!questions || questions.length === 0) {
+    if (!userWithQuestions) {
         return next(
-            new HttpError('Could not find a question for the provided user id.', 404)
+            new HttpError('Could not find questions for the provided user id.', 404)
         );
     }
 
-    res.json({ questions: questions.map(question => question.toObject({ getters: true })) });
+    res.json({ questions: userWithQuestions.map(question => question.toObject({ getters: true })) });
+
+
+
+    // try {
+    //     questions = await Question.find({ createdBy: userId })
+    // }
+    // catch (err) {
+    //     const error = new HttpError('Fetching Failed, please try again later.', 500);
+    //     return next(error);
+    // }
+
+
+
+    // if (!questions || questions.length === 0) {
+    //     return next(
+    //         new HttpError('Could not find a question for the provided user id.', 404)
+    //     );
+    // }
+
+    // res.json({ questions: questions.map(question => question.toObject({ getters: true })) });
 };
 
 
 const createdQuestion = async (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        throw new HttpError('Invalid inputs passed, please check your data.', 422);
-    }
-    const { name, category, subCategory, mark, expextedTime, correctAnswers, createdBy, answers } = req.body;
 
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //     throw new HttpError('Invalid inputs passed, please check your data.', 422);
+    // }
+    let body = JSON.parse(req.body.body)
+    const { name, category, subCategory, mark, expextedTime, correctAnswers, createdBy, createdAt, answers } = body;
+    console.log(body)
     // const title = req.body.title;
 
     const createdQuestion = new Question({
@@ -111,49 +124,70 @@ const createdQuestion = async (req, res, next) => {
         answers
     });
 
+    console.log(createdQuestion);
+    // let user;
+    // try {
+    //     user = await User.findById(createdBy);
+    //     // if (createdBy.match(/^[0-9a-fA-F]{24}$/)) {
+    //     //     // Yes, it's a valid ObjectId, proceed with `findById` call.
+    //     // }
+    // }
+    // catch (err) {
+    //     const error = new HttpError("creating question failed", 500);
+    //     return next(error);
+    // }
 
-    let user;
-    try {
-        user = User.findById(createdBy);
-    }
-    catch (err) {
-        const error = new HttpError("creating question failed", 500);
-    return next(error);
-    }
+    // if (!user) {
+    //     const error = new HttpError("could not find user for the provided id", 404);
+    //     return next(error);
+    // }
+    // console.log(user);
+    // try {
+    //     const sess=await mongoose.startSession();
+    //     sess.startTransaction();
+    //     await createdQuestion.save({session:sess});
+    //     user.creatorID.push(createdQuestion);
+    //     await user.save({session:sess});
+    //     await sess.commitTransaction();
+    // } catch (err) {
+    //     const error = new HttpError(
+    //         'Creating question failed, please try again.',
+    //         500
+    //     );
+    //     return next(error);
+    // }
 
-    if(!user){
-        const error=new HttpError("could not find user for the provided id",404 );
-        return next(error);
-    }
-    console.log(user);
     try {
-        const sess=await mongoose.startSession();
-        sess.startTransaction();
-        await createdQuestion.save({session:sess});
-        user.creatorID.push(createdQuestion);
-        await user.save({session:sess});
-        await sess.commitTransaction();
+        await createdQuestion.save();
     } catch (err) {
         const error = new HttpError(
-            'Creating question failed, please try again.',
-            500
+            'creating failed, please try again.',
+            400
         );
+        console.error(err);
         return next(error);
     }
 
+
+
+    console.log(createdQuestion);
     res.status(201).json({ question: createdQuestion });
 };
 
 
 const updateQuestion = async (req, res, next) => {
+    console.log("test update in bank")
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         throw new HttpError('Invalid inputs passed, please check your data.', 422);
     }
 
 
-    let { name, category, subCategory, mark, expextedTime, correctAnswers, createdBy, createdAt, answers } = req.body;
+    let body = JSON.parse(req.body.body)
+
+    let { name, category, subCategory, mark, expextedTime, correctAnswers, createdBy, createdAt, answers } = body;
     const questionId = req.params.qid;
+    console.log(body);
     let question;
     try {
         createdAt = new Date();
@@ -250,3 +284,4 @@ exports.getQuestionsByUserId = getQuestionsByUserId;
 exports.createdQuestion = createdQuestion;
 exports.updateQuestion = updateQuestion;
 exports.deleteQuestion = deleteQuestion;
+exports.getQuestions=getQuestions;

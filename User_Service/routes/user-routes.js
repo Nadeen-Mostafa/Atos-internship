@@ -10,6 +10,10 @@ const router=express.Router();
 
 router.get('/', usersController.getUsers);
 
+// router.post('/', function(req, res) {
+//   console.log("error here");
+// });
+
 router.post(
     '/signup',
     [
@@ -20,6 +24,19 @@ router.post(
     ],
     usersController.signup
   );
+
+  router.post(
+    '/signupadmin',
+    [
+      check('name')
+        .not()
+        .isEmpty(),
+      check('password').isLength({ min: 6 })
+    ],
+    usersController.signup
+  );
+
+
 router.post('/login', usersController.login);
 
 module.exports = router;

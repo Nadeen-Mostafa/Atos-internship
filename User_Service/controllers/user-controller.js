@@ -7,7 +7,7 @@ const User = require("../models/user");
 
 const bcrypt = require("bcryptjs"); //hashing password
 
-const { validationResult } = require('express-validator');
+const { validationResult, body } = require('express-validator');
 
 const DUMMY_USERS = [
     {
@@ -34,14 +34,15 @@ const getUsers = async (req, res, next) => {
 
 
 const signup = async (req, res, next) => {
-    const {name, password, userType } = req.body;
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return next(
-            new HttpError("invalid inputs")
-        )
-    }
-   
+    let body = JSON.parse(req.body.body)
+    const {name, password, userType } = body;
+    // const errors = validationResult(req);
+
+    // if (userType==="alo") {
+    //     const error = new HttpError("faild to sign up", 500);
+
+    //     return next(error);
+    // }
 
     let isexist;
     try {
@@ -103,12 +104,92 @@ const signup = async (req, res, next) => {
         return next(error);
 
     };
-    res.status(201).json({ userId:createdUser.id, message:"signup successfully" , userTyper:createdUser.userType,name:createdUser.name , token:token });
+    res.status(201).json({ userId:createdUser.id, message:"signup successfully" , userType:createdUser.userType,name:createdUser.name , token:token });
 
 }
-const login = async (req, res, next) => {
-    const { name, password } = req.body;
 
+
+const signupadmin = async (req, res, next) => {
+    let body = JSON.parse(req.body.body)
+    const {name, password, userType } = body;
+    // const errors = validationResult(req);
+
+    // if (userType==="alo") {
+    //     const error = new HttpError("faild to sign up", 500);
+
+    //     return next(error);
+    // }
+
+    let isexist;
+    try {
+        isexist = await User.findOne({ name: name });
+    }
+    catch (err) {
+        const error = new HttpError("faild to sign up", 500);
+
+        return next(error);
+    }
+
+    if (isexist) {
+        const err = new HttpError("user exist so please log in or try again", 400);
+        return next(err);
+    }
+
+ 
+    let hashedPassword;
+    try {
+        hashedPassword = await bcrypt.hash(password, 12);
+    }
+    catch (err) {
+        const error = new HttpError("couldn't create user", 500);
+        return next(error);
+    }
+
+    const createdUser = new User({
+        
+        name, // name: name
+        password: hashedPassword,
+        userType
+    });
+
+   
+
+
+    try {
+        await createdUser.save();
+    } catch (err) {
+        const error = new HttpError(
+            'Signing up failed, please try again.',
+            400
+        );
+        console.error(err);
+        return next(error);
+    }
+
+    // res.status(201).json({ user: createdUser.toObject({ getters: true }) });
+
+
+    let token;
+
+    try {
+        token = jwt.sign({ userId: createdUser.id,name:createdUser.name, userType: createdUser.userType }, "supersecrets", { expiresIn: "1h" });
+    }
+    catch (err) {
+
+        const error = new HttpError("faild to create user", 500);
+        return next(error);
+
+    };
+    res.status(201).json({ userId:createdUser.id, message:"signup successfully" , userType:createdUser.userType,name:createdUser.name , token:token });
+
+}
+
+
+const login = async (req, res, next) => {
+    
+    let body = JSON.parse(req.body.body)
+    const { name, password } = body;
+    console.log(body);
     let existUser;
     try {
         existUser = await User.findOne({ name: name });
@@ -150,7 +231,7 @@ const login = async (req, res, next) => {
         return next(error);
 
     };
-    res.status(201).json({ userId: existUser.id, message: "login successfully", userTyper: existUser.userType, name: existUser.name, token, token });
+    res.status(201).json({ userId: existUser.id, message: "login successfully", userType: existUser.userType, name: existUser.name, token, token });
 
 
 
@@ -159,3 +240,4 @@ const login = async (req, res, next) => {
 exports.getUsers = getUsers;
 exports.signup = signup;
 exports.login = login;
+// exports.signupadmin = signupadmin;

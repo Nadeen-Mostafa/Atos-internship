@@ -1,23 +1,31 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 import Card from '../../shared/components/UIElements/Card';
 import QuestionItem from './QuestionItem';
 import './QuestionList.css';
+import { AuthContext } from '../../user/pages/auth-context';
+
 
 const QuestionList = props => {
+  const auth = useContext(AuthContext);
+
+
   if (props.items.length === 0) {
     return (
-      <div className="place-list center">
+      <div className="question-list center">
+        {/* {console.log(auth.userType)} */}
+        {/* {auth.isLoggedIn && auth.userType=="teacher" &&( */}
         <Card>
-          <h2>No questions found. Maybe create one?</h2>
-          <button>Share question</button>
+          
+          <h2>No questions found.</h2>
         </Card>
+        {/* )} */}
       </div>
     );
   }
 
   return (
-    <ul className="place-list">
+    <ul className="question-list">
       {props.items.map(question => (
 
         <QuestionItem
@@ -30,14 +38,8 @@ const QuestionList = props => {
           subCategory={question.subCategory}
           createdBy={question.createdBy}
           answers={question.answers}
-          // key={question.answers.id}
-        // {...props.items.map(answer => (
-        //   <QuestionItem
-        //     key={answer.id}
-        //     answers={answer.name}
-
-        //   />
-        // ))}
+          onDelete={props.onDeleteQuestion}
+         
 
         />
       ))}

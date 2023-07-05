@@ -7,6 +7,7 @@ router.get('/:qid', QuestionsController.getQuestionsById);
 
 router.get('/user/:uid', QuestionsController.getQuestionsByUserId);
 
+router.get("/",QuestionsController.getQuestions);
 
 router.post('/', [
     check('name')

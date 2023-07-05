@@ -20,10 +20,12 @@ const UsersList = props => {
           id={user.id}
           name={user.name}
           password={user.password}
-          userType={user.usertype}
+          userType={user.userType}
           questionsCount={user.questions}
         />
+       
       ))}
+       {/* {console.log(props)} */}
     </ul>
   );
 };

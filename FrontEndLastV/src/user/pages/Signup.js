@@ -1,4 +1,4 @@
-import React ,{useState} from 'react';
+import React, { useContext, useState } from 'react';
 import Card from '../../shared/components/UIElements/Card';
 import Input from '../../shared/components/input/Input';
 import Button from '../../shared/components/Button/Button';
@@ -9,11 +9,17 @@ import {
 import { useForm } from '../../shared/Hooks/form-hook';
 import './Auth.css';
 import Login from './Login';
+import { AuthContext } from './auth-context';
+
 // import HttpError from '../../user';
 import axios from "axios";
+import ErrorModel from '../../Model/ErorrModel';
+
+
 const Signup = () => {
     const [isLoginMode, setIsLoginMode] = useState(true);
-
+    const auth = useContext(AuthContext);
+    const [error, setError] = useState();
     const [formState, inputHandler] = useForm(
         {
             username: {
@@ -32,32 +38,95 @@ const Signup = () => {
         false
     );
 
+    let type = formState.inputs.usertype.value;
 
-
-    
-  
-    const authSubmitHandler = event => {
-        event.preventDefault();
-        // console.log(formState.inputs);
+    const errorHandler = () => {
+        setError(null);
     };
 
+    const authSubmitHandler = async event => {
+        event.preventDefault();
 
-    const baseURL="http://localhost:3000"
-    const SavedData =async(username, password, usertype) =>{
-        // event.preventDefault();
-        let res;
-        try{
-            const URL= baseURL+ "/signup";
-            res=await axios.post(URL ,{username,password,usertype});
-            console.log(res);
-            // return res.data;
+        const NewType =await type.toLowerCase();
+
+        const teacher = "teacher";
+        const student = "student";
+        // const admin = "superadmin";
+        // console.log(NewType === teacher);
+        try {
+            if (NewType === teacher || NewType === student) {
+               
+                const response = await axios.post("http://localhost:4000/api/users/signup", {
+                    // method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        name: formState.inputs.username.value,
+                        password: formState.inputs.password.value,
+                        userType: formState.inputs.usertype.value
+                    })
+                });
+                const resData = await response.data;
+                // console.log(resData.userId);
+                auth.login(resData.userId,resData.userType);
+                type =await formState.inputs.usertype.value;
+                // auth.userType = type;
+                auth.isLoggedIn = true;
+                
+
+                // console.log(auth.userType);
+            }
+            else if (NewType !== "teacher" || NewType !== "student") {
+                console.log("error")
+                setError('Please enter valid input, specify if your are teacher or student');
+            }
         }
-        catch(error){
-           throw Error(error.response.data.error.message);
+
+        catch (err) {
+            if (NewType === "teacher" || NewType === "student")
+                setError('user exist so please log in or try again');
+            // console.log("test if condition");
+
+
+
         }
+
+        return (
+            <React.Fragment>
+                <ErrorModel error={error} />
+
+
+
+            </React.Fragment>);
     }
+
+    // else if(NewType===admin){
+
+
+    // }
+    //     else{
+    //     setError('Please enter valid input, specify if your are teacher or student');
+    //     console.log("test if condition");
+
+
+    //     return (
+    //         <React.Fragment>
+    //             <ErrorModel error={error} />
+
+
+
+    //         </React.Fragment>);
+    // }
+
+    // }
+    // console.log(type);
+
+
+
     return (
         <Card className="authentication">
+            <ErrorModel error={error} onClear={errorHandler} />
             <h2>Sign up Required</h2>
             <hr />
             <form onSubmit={authSubmitHandler}>
@@ -89,10 +158,11 @@ const Signup = () => {
                     validators={[VALIDATOR_REQUIRE]}
                     errorText="Please enter a valid input"
                     onInput={inputHandler}
+                // onChange={validateForm}
                 />
-                <button type="submit" disabled={!formState.isValid} onClick={SavedData}>
-                    {isLoginMode ? 'SIGN UP' : <Login/> }
-                </button>
+                <Button type="submit" disabled={!formState.isValid}>
+                    Sign Up
+                </Button>
             </form>
             {/* <Button inverse onClick={switchModeHandler}>
                 SWITCH TO {isLoginMode ? 'SIGNUP' : 'LOGIN'}
